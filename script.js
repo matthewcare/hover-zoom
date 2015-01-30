@@ -20,6 +20,14 @@ var Hoverzoom = {
     // since this value is used elsewhere
     divWidth: 500,
     divHeight: 500,
+    // If set to true, the hover area will shift to the left
+    // and right of the mouse if the cursor is in the left
+    // half, or right half of the screen
+    shiftHorizontal: true,
+    // If set to true, the hover area will shift above,
+    // and below the mouse if the cursor is in the top
+    // half, or bottom half of the screen
+    shiftVertical: true,
     // Check to see if the source image is
     // smaller than the one on the page
     // True or false
@@ -45,57 +53,57 @@ var Hoverzoom = {
         // If IE8
         } else {
             Hoverzoom.elems = document.querySelectorAll('.hoverzoom');
-        };
-
+        }
         // If checkSize is set to true, hoverzoom will only apply to
         // images whose source is larger than the element on the page
         if (Hoverzoom.checkSize) {
-            Hoverzoom.compareSizes()
+            Hoverzoom.compareSizes();
         }
-        Hoverzoom.addListeners();
+        Hoverzoom.checkForElements();
+    },
+
+    // Checks there are elements to add listeners to
+    checkForElements: function () {
+        var elemsLength = Hoverzoom.elems.length,
+            i = 0;
+        if (elemsLength !== 0) {
+            // Loops through elements
+            for (i; i < elemsLength; i++) {
+                Hoverzoom.addListeners(Hoverzoom.elems[i]);
+            }
+        }
     },
 
     // Add listeners to each hoverzoom element
     // attachEvent for IE8 support
-    addListeners: function () {
-        var elemsLength = Hoverzoom.elems.length,
-            i = 0;
-        // Makes sure there are elements to add listeners to
-        if (elemsLength !== 0) {
-            // Loops through elements
-            for (i; i < elemsLength; i++) {
-                // IE8 check
-                if (Hoverzoom.elems[i].addEventListener) {
-                    Hoverzoom.elems[i].addEventListener('mousemove', function (e) {
-                        // Creates the zoom area div
-                        if (!Hoverzoom.divCreated) {
-                            Hoverzoom.createZoomArea();
-                            Hoverzoom.divCreated = true;
-                        }
-                        Hoverzoom.getMousePosition(this, e);
-                    })
-                    // Destroys the zoom area div on mouse out
-                    Hoverzoom.elems[i].addEventListener('mouseout', function () {
-                        Hoverzoom.mouseOut();
-                    })
-                // If IE8
-                } else {
-                    Hoverzoom.elems[i].attachEvent('onmousemove', function (e) {
-                        // Creates the zoom area div
-                        if (!Hoverzoom.divCreated) {
-                            Hoverzoom.createZoomArea();
-                            Hoverzoom.divCreated = true;
-                        }
-                        // Ueses e.srcElement in place of the addEventListeners
-                        // 'this' parameter
-                        Hoverzoom.getMousePosition(e.srcElement, e);
-                    })
-                    // Destroys the zoom area div on mouse out
-                    Hoverzoom.elems[i].attachEvent('onmouseout', function () {
-                        Hoverzoom.mouseOut();
-                    })
+    addListeners: function (elem) {
+        // IE check
+        if (elem.addEventListener) {
+            elem.addEventListener('mousemove', function (e) {
+                // Creates the zoom area div
+                if (!Hoverzoom.divCreated) {
+                    Hoverzoom.createZoomArea();
                 }
-            }
+                Hoverzoom.getMousePosition(this, e);
+            });
+            // Destroys the zoom area div on mouse out
+            elem.addEventListener('mouseout', function () {
+                Hoverzoom.mouseOut();
+            });
+        } else {
+            elem.attachEvent('onmousemove', function (e) {
+                // Creates the zoom area div
+                if (!Hoverzoom.divCreated) {
+                    Hoverzoom.createZoomArea();
+                }
+                // Uses e.srcElement in place of the addEventListeners
+                // 'this' parameter
+                Hoverzoom.getMousePosition(e.srcElement, e);
+            });
+            // Destroys the zoom area div on mouse out
+            elem.attachEvent('onmouseout', function () {
+                Hoverzoom.mouseOut();
+            });
         }
     },
 
@@ -130,6 +138,7 @@ var Hoverzoom = {
 
     // Creates the div for the zoomed content to show in
     createZoomArea: function () {
+        Hoverzoom.divCreated = true;
         var div = document.createElement("div");
         div.id = 'zoomArea';
         div.style.width = Hoverzoom.divWidth + 'px';
@@ -148,7 +157,7 @@ var Hoverzoom = {
             zoomAreaBbox = zoomArea.getBoundingClientRect(),
             // IE8 getBoungingCLientRect returned object doesn't
             // contain width and height, so (bottom - top) and
-            // (left - right) are used inplace of this
+            // (left - right) are used in place of this
             elemBbox = elem.getBoundingClientRect(),
             // Gets the mouses X and Y position within the
             // image.
@@ -179,20 +188,20 @@ var Hoverzoom = {
         // is hovering over
         Hoverzoom.zoomArea.style.background = 'url(' + elem.src + ') ' + 'no-repeat';
         // Sets the position of the background
-        Hoverzoom.zoomArea.style.backgroundPosition =  check.X + ' ' + check.Y;     
+        Hoverzoom.zoomArea.style.backgroundPosition =  check.X + ' ' + check.Y;
     },
 
     // naturalDimensions isn't supported in
     // IE8, so this function works out the
     // hovered image's original (source)
     // dimensions
-    getNaturalDimensions: function(elem) {
+    getNaturalDimensions: function (elem) {
         var img = new Image();
         img.src = elem.src;
         return {
-            width: img.width, 
+            width: img.width,
             height: img.height
-        }
+        };
     },
 
     // Checks the position of the mouse so that the background always
@@ -207,7 +216,6 @@ var Hoverzoom = {
         } else {
             X = -positionX < 0 ? 'left ' : 'right ';
         }
-
         // Checks the Y position of the mouse and sets the Y position to either a value,
         // or top or bottom
         if ((positionY < 0) && (-positionY < naturalHeight - Hoverzoom.divHeight)) {
@@ -217,24 +225,24 @@ var Hoverzoom = {
         }
 
         return {
-                X: X,
-                Y: Y
-            }
+            X: X,
+            Y: Y
+        };
     },
 
     // Sets the zoom area div's position on the page
     // Takes into account vertical and horizontal scroll
-    // and if the cursor is less than half way accross the
+    // and if the cursor is less than half way across the
     // screen, shifting the div position accordingly
     setDivPosition: function (e) {
-        var windowWidth = window.innerWidth || document.documentElement.clientWidth || document.body.clientWidth;
-        var windowHeight = window.innerHeight || document.documentElement.clientHeight || document.body.clientHeight;
-        if (e.clientX <= windowWidth / 2) {
+        var windowWidth = window.innerWidth || document.documentElement.clientWidth || document.body.clientWidth,
+            windowHeight = window.innerHeight || document.documentElement.clientHeight || document.body.clientHeight;
+        if (e.clientX <= windowWidth / 2 && Hoverzoom.shiftHorizontal) {
             Hoverzoom.zoomArea.style.left = e.clientX + document.body.scrollLeft + Hoverzoom.divOffsetX + 'px';
         } else {
             Hoverzoom.zoomArea.style.left = e.clientX + document.body.scrollLeft - Hoverzoom.divOffsetX - Hoverzoom.divWidth + 'px';
         }
-        if (e.clientY <= windowHeight / 2) {
+        if (e.clientY <= windowHeight / 2 && Hoverzoom.shiftVertical) {
             Hoverzoom.zoomArea.style.top = e.clientY + document.body.scrollTop + Hoverzoom.divOffsetY + 'px';
         } else {
             Hoverzoom.zoomArea.style.top = e.clientY + document.body.scrollTop - Hoverzoom.divOffsetY - Hoverzoom.divHeight + 'px';
@@ -247,16 +255,16 @@ var Hoverzoom = {
         document.body.removeChild(Hoverzoom.zoomArea);
         Hoverzoom.divCreated = false;
     }
-}
+};
 
 // Runs Hoverzoom when the page is loaded
 if (window.addEventListener) {
     window.addEventListener('load', function () {
-        Hoverzoom.loaded()
-    })
+        Hoverzoom.loaded();
+    });
 // attachEvent for IE8 support
 } else {
     window.attachEvent('onload', function () {
-        Hoverzoom.loaded()
-    })
+        Hoverzoom.loaded();
+    });
 }
